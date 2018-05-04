@@ -1,19 +1,38 @@
 use v6.c;
 
-unit module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH>;
+my $DATA;
 
-my $handle;
-my $lock = Lock.new;
-my sub term:<DATA>(--> IO::Handle:D) {
-    $handle // $lock.protect: {
-        $handle //= callframe(3).file.IO.open(:r)
+module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH> {
+
+    my $handle;
+    my $lock = Lock.new;
+    my sub term:<DATA>(--> IO::Handle:D) {
+        $lock.protect: {
+            $handle //= callframe(3).file.IO.open(:r, :!chomp)
+        }
+
+        # Perl 5's logic appears to be that a line that contains 
+        loop {
+            with $handle.get -> $line {
+                my $pos = 0;
+                $pos = $_ + 1 with $line.index('#');
+                return $handle with $line.index('__DATA__', $pos);
+                return $handle with $line.index('__END__', $pos);
+            }
+            else {
+                return $handle;
+            }
+        }
     }
+
+    $DATA := &term:<DATA>;
 }
 
 sub EXPORT(|) {
-
-    role Data::Grammar {
+    role Data {
         method obs($, $, $?) { say "we're in obs" }
+        token term:sym<p5end>  { <!> }
+        token term:sym<p5data> { <!> }
         token pod_block:sym<finish> {
             ^^ \h*
             [
@@ -27,13 +46,9 @@ sub EXPORT(|) {
         }
     }
 
-    $*LANG.define_slang(
-      'MAIN',
-      $*LANG.slang_grammar('MAIN').^mixin(Data::Grammar),
-      $*LANG.actions
-    );
+    $*LANG.define_slang('MAIN', $*LANG.slang_grammar('MAIN').^mixin(Data));
 
-    { '&term:<DATA>' => &term:<DATA> }
+    { '&term:<DATA>' => $DATA }
 }
 
 =begin pod
