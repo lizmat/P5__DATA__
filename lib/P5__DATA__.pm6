@@ -14,10 +14,17 @@ module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH> {
         # Perl 5's logic appears to be that a line that contains 
         loop {
             with $handle.get -> $line {
-                my $pos = 0;
-                $pos = $_ + 1 with $line.index('#');
-                return $handle with $line.index('__DATA__', $pos);
-                return $handle with $line.index('__END__', $pos);
+                my $pos;
+                $pos = $_ with $line.index('__DATA__');
+                $pos = $_ with $line.index('__END__');
+                with $pos {
+                    with $line.index('#') -> $comment {
+                        return $handle if $comment > $pos;
+                    }
+                    else {
+                        return $handle;
+                    }
+                }
             }
             else {
                 return $handle;
