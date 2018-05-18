@@ -1,7 +1,6 @@
 use v6.c;
 
 my $DATA;
-
 module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH> {
 
     my $handle;
@@ -72,6 +71,24 @@ P5__DATA__ - Implement Perl 5's __DATA__ and related functionality
 
 This module tries to mimic the behaviour of C<__DATA__> and C<__END__> and
 the associated C<DATA> file handle of Perl 5 as closely as possible.
+
+=head1 ORIGINAL PERL 5 DOCUMENTATION
+
+
+    Text after __DATA__ may be read via the filehandle "PACKNAME::DATA", where
+    "PACKNAME" is the package that was current when the __DATA__ token was
+    encountered. The filehandle is left open pointing to the line after
+    __DATA__. The program should "close DATA" when it is done reading from it.
+    (Leaving it open leaks filehandles if the module is reloaded for any
+    reason, so it's a safer practice to close it.) For compatibility with
+    older scripts written before __DATA__ was introduced, __END__ behaves like
+    __DATA__ in the top level script (but not in files loaded with "require"
+    or "do") and leaves the remaining contents of the file accessible via
+    "main::DATA".
+
+=head1 PORTING CAVEATS
+
+__END__ functions in the same was as __DATA__.
 
 =head1 AUTHOR
 
