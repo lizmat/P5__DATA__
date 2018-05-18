@@ -6,29 +6,31 @@ module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH> {
     my $handle;
     my $lock = Lock.new;
     my sub term:<DATA>(--> IO::Handle:D) {
-        $lock.protect: {
-            $handle //= callframe(3).file.IO.open(:r, :!chomp)
-        }
+        sub findDATA() {
 
-        # Perl 5's logic appears to be that a line that contains 
-        loop {
-            with $handle.get -> $line {
-                my $pos;
-                $pos = $_ with $line.index('__DATA__');
-                $pos = $_ with $line.index('__END__');
-                with $pos {
-                    with $line.index('#') -> $comment {
-                        return $handle if $comment > $pos;
-                    }
-                    else {
-                        return $handle;
+            $handle = callframe(4).file.IO.open(:r, :!chomp);
+
+            loop {
+                with $handle.get -> $line {
+                    my $pos;
+                    $pos = $_ with $line.index('__DATA__');
+                    $pos = $_ with $line.index('__END__');
+                    with $pos {
+                        with $line.index('#') -> $comment {
+                            return $handle if $comment > $pos;
+                        }
+                        else {
+                            return $handle if $pos == 0;
+                        }
                     }
                 }
-            }
-            else {
-                return $handle;
+                else {
+                    return $handle;
+                }
             }
         }
+
+        $lock.protect: { $handle // findDATA }
     }
 
     $DATA := &term:<DATA>;
@@ -36,25 +38,21 @@ module P5__DATA__:ver<0.0.1>:auth<cpan:ELIZABETH> {
 
 sub EXPORT(|) {
     role Data {
-        method obs($, $, $?) { say "we're in obs" }
-        token term:sym<p5end>  { <!> }
-        token term:sym<p5data> { <!> }
-        token pod_block:sym<finish> {
+        token term:sym<p5end>  {
             ^^ \h*
-            [
-                | '=begin' \h+ 'finish' <pod_newline>
-                | '=for'   \h+ 'finish' <pod_newline>
-                | '=finish'  <pod_newline>
-                | '__DATA__' <pod_newline>
-                | '__END__'  <pod_newline>
-            ]
+            '__END__' <pod_newline>
+            $<finish> = .*
+        }
+        token term:sym<p5data> {
+            ^^ \h*
+            '__DATA__' <pod_newline>
             $<finish> = .*
         }
     }
 
     $*LANG.define_slang('MAIN', $*LANG.slang_grammar('MAIN').^mixin(Data));
 
-    { '&term:<DATA>' => $DATA }
+    { '&DATA' => $DATA }
 }
 
 =begin pod

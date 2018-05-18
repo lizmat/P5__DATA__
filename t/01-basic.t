@@ -4,9 +4,7 @@ use P5__DATA__;
 
 plan 2;
 
-ok defined(::('&term:<DATA>')),            'is DATA imported?';
-ok !defined(P5__DATA__::{'&term:<DATA>'}), 'is DATA externally NOT accessible?';
-
-__DATA__
+ok defined(::('&DATA')),            'is DATA imported?';
+ok !defined(P5__DATA__::{'&DATA'}), 'is DATA externally NOT accessible?';
 
 # vim: ft=perl6 expandtab sw=4
